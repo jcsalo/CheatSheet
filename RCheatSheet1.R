@@ -1,7 +1,7 @@
 ## Setup
 library(survival) ## load 'survival' package
 
-# Limit printing for sake of brevity:
+# Limit printing for sake of brevity using options
 options(max.print=20)
 
 ## Getting Help
