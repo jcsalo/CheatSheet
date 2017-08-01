@@ -1,0 +1,137 @@
+---
+title: "glm Cheat Sheet"
+author: "JCSalo"
+date: "August 1, 2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(broom)
+```
+
+## R Markdown
+
+The	glm	function	is	the	basic	tool	for	fitting	generalized	linear	models:
+
+> glm(formula, family, data, weights, subset, ...)
+
+The	family	parameter	is	specific	to	the	glm	function.	There are	six	choices	of	family:	
+
++  family = gaussian (link=identity)
++  family = binomial (link=logit, probit, or cloglog)
++  family = poisson (link=log, identity or sqrt)
++  family = Gamma (link = inverse, identity, or log)
++  family = inverse.gaussian (link=1/mu^2)
+
+The	family	parameter	is	specific	to	the	glm	function.	There are	six	choices	of	family:	
+Each	of	the	first	five	choices	has	a	variance	function	and	one	or	more	link	functions.	The	
+last	is	user-defined.	To	use	default	link,	all	you	have	to	do	is	specify	the	family	name.	To	use	
+an	alternative	link	you	must	specify	what	you	want:
+
+
+```{r glm_meal, comment=''}
+glm_meal<-glm(ph.ecog ~ meal.cal+ wt.loss + inst, data=cancer)
+glm_meal
+summary(glm_meal) # displays detailed model information
+summary(glm_meal)$coefficients # shows coefficients in a matrix
+summary(glm_meal)$coefficients[-1,c('Estimate','Pr(>|t|)')] # selects cells from matrix
+tidy(glm_meal) # 'tidy' display of results
+```
+
+## Univariate glm - interative loop
+
+You can also embed plots, for example:
+
+```{r uniglmloop, comment=''}
+
+ph.ecog_fit<-""  #create a variable (dataframe) which will hold the glm data
+
+for (vars in c("meal.cal","wt.loss","age","inst","sex" )){  #for loop iterates through variables
+  
+  ph.ecog_uniglm<-glm(ph.ecog ~ get(vars), data=cancer) # call glm function. 
+      # Note "get(vars)" used for the independent variable
+  ph.ecog_uniglm_tidy<-tidy(ph.ecog_uniglm)  # tidy() function creates a compact output of results
+  ph.ecog_uniglm_tidy<-ph.ecog_uniglm_tidy[-1,]  # delete the first line of glm() output 
+      # (which contains the intercept)
+  ph.ecog_uniglm_tidy[c(2:5)]<-lapply(ph.ecog_uniglm_tidy[c(2:5)], function(x) signif(x,digits=5) )  
+      #limit data to 5 significant digits
+  col1<-paste(vars,substr(ph.ecog_uniglm_tidy[,1],10,100),sep="|") # creates a label for the output line
+      # IF variables used are factors (see below), we can shows them
+  ph.ecog_uniglm_tidy[,1]<-col1   # moves the label into the first column of the glm() output
+  ph.ecog_fit<-rbind(ph.ecog_fit,ph.ecog_uniglm_tidy)  # adds the output line to the dataframe of results
+ 
+}
+print(ph.ecog_fit, row.names=FALSE) # print the dataframe, omiting the row numbers
+```
+
+If variables for glm as represented as factors, glm() will show the results for each level of the factor:
+
+We will create a new variable sexf which is a factor with two levels
+
+We will also change wt.loss into a categorical variable with cut()
+
+```{r uniglmloop3, comment=''}
+
+cancer$sexf<-factor(cancer$sex, levels = c(1,2), labels = c("M","F"))
+cancer$wt.loss_cut<-cut(cancer$wt.loss, breaks=quantile(cancer$wt.loss
+    , probs=seq(0,1,by=0.25),na.rm=TRUE)
+    ,labels=c('Low','Med','High','vHigh'),include.lowest=TRUE)
+ table(cancer$wt.loss_cut,dnn=c("wt.loss_cut"))
+```
+Variable sex is of class `r class(cancer$sex)`
+
+Variable sexf is of class `r class(cancer$sexf)`
+
+Variable wt.loss is of class `r class(cancer$wt.loss)`
+
+Variable wt.loss_cut is of class `r class(cancer$wt.loss_cut)`
+
+```{r uniglmloop3a, comment=''}
+ph.ecog_fit<-""  
+
+for (vars in c("meal.cal","wt.loss_cut","age","inst","sexf" )){  #for loop iterates through variables
+  
+  ph.ecog_uniglm<-glm(ph.ecog ~ get(vars), data=cancer)
+  ph.ecog_uniglm_tidy<-tidy(ph.ecog_uniglm)  
+  ph.ecog_uniglm_tidy<-ph.ecog_uniglm_tidy[-1,] 
+  ph.ecog_uniglm_tidy[c(2:5)]<-lapply(ph.ecog_uniglm_tidy[c(2:5)], function(x) signif(x,digits=5) )  
+  col1<-paste(vars,substr(ph.ecog_uniglm_tidy[,1],10,100),sep="|") # creates a label for the output line
+    # We can now see the factor levels displayed in results
+  ph.ecog_uniglm_tidy[,1]<-col1   
+  ph.ecog_fit<-rbind(ph.ecog_fit,ph.ecog_uniglm_tidy) 
+}
+print(ph.ecog_fit, row.names=FALSE) # print the dataframe, omiting the row numbers
+```
+
+Note that 'Low' is chosen as the referent, because it is the first label
+
+We can reorder the factor as follows:
+
+```{r uniglmloop4, comment=''}
+cancer$wt.loss_cutR<-relevel(cancer$wt.loss_cut, "vHigh")
+ph.ecog_fit<-""  
+
+for (vars in c("meal.cal","wt.loss_cutR","age","inst","sexf" )){  #for loop iterates through variables
+  
+  ph.ecog_uniglm<-glm(ph.ecog ~ get(vars), data=cancer) 
+  ph.ecog_uniglm_tidy<-tidy(ph.ecog_uniglm)  
+  ph.ecog_uniglm_tidy<-ph.ecog_uniglm_tidy[-1,] 
+  ph.ecog_uniglm_tidy[c(2:5)]<-lapply(ph.ecog_uniglm_tidy[c(2:5)], function(x) signif(x,digits=5) )  
+  col1<-paste(vars,substr(ph.ecog_uniglm_tidy[,1],10,100),sep="|") 
+    # Note the change in levels displayed for wt.loss_cutR
+  ph.ecog_uniglm_tidy[,1]<-col1   
+  ph.ecog_fit<-rbind(ph.ecog_fit,ph.ecog_uniglm_tidy) 
+
+}
+print(ph.ecog_fit, row.names=FALSE) # print the dataframe, omiting the row numbers
+```
+
+What we see here is that globally, wt.loss is a significant predictor of ECOG performance status.  (p=0.006). 
+
+When Low weight loss is used as the referent, Med and High are not different, but vHigh is different.
+
+When vHigh weight loss is used as a referent, it is clear that it is different from Low, Med, and High
