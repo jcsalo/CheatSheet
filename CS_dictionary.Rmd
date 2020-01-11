@@ -1,0 +1,36 @@
+---
+title: "MIE Data Dictionary"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setupdict, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(width='\\linewidth')
+```
+
+## Data Dictionary
+
+
+| Variable  | Definition | Values         |
+| :------------ | :--------------- | --------------------------------------: |
+| racec     | Race (3-way)        | White, Black, Asian |
+| Histology    |    | Adeno, SCCA, NE, Benign               |
+| Histo | | Adeno, SCCA, Benign|
+| Thoracic|Surgical Approach to chest|Thoracoscopy, Thoracotomy, Converted|
+|Abdomen| Surgical Approach to abdomen|Laparoscopy, Laparotomy ,Converted|
+|GastricDrainage|Surgical Treatment of Pylorus|None, Pyloromyotomy,Pyloroplasty, Balloon, Botox|
+|Neoadjuvant|||
+|Adjuvant|||
+|RadSurgSeq|Sequence of radiation and surgery|None, Pre,Post,Both|
+|SysSurgSeq|Sequence of chemotherapy and surgery|None, Pre,Post,Both|
+|Margins|Surgical Margins|R0,R?,R1,R2|
+|Margins2|Surgical Margins|R0,R+|
+|AnastomosisLoc|Location of Anastomosis|Cervical,Thoracic,Abdominal|
+|AnastomosisType|Anastomosis technique|Circular, Linear, Hand-sewn|
+|Synchronous|Surgical Approach|Two-Stage, Synchronous|
+|Rank50|Surgical Experience Group|1,2,3,4|
+|Rank50f|Surgical Experience Group (factor)|<50,50-100,101-150+|
+
+Table: Data Dictionary

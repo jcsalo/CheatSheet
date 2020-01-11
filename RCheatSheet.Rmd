@@ -1,0 +1,421 @@
+---
+title: "CheatSheet"
+author:
+- First Author
+- Second Author
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document: default
+geometry: margin=0.5in
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(rms) #Frank Harrell's package companion to Regression Modeling Strategies Book
+library(knitr) # Used to generate reproduceable rearch
+library(pander) # Generate tables for MS Word documents
+library(tableone) # Generates Table 1 for clinical research reporting
+library(descr)  # Used for CrossTable
+library(plotrix)  #used for ablineclip - clips abline on scatter plots
+library(broom)  # used for tidy() - function which reformats regression coefficients 
+library(foreign)
+library(reporttools)
+#library(doBy) #use for summaryby() function
+#library(broom)
+#library(kimisc) #use for 'thisfile()' function
+#library(tab)
+#library(stringr) #use for string manipulation (to save dataframe as Excel and RData files)
+#library(Gmisc) # use for tables
+#library(Hmisc) #usefor labels
+
+
+#library(reporttools)
+
+#library(tab)
+#library(colorspace) # Used for plot pallate
+#library(lsr)
+#library(MASS) # used for stepAIC
+#library(plyr)
+```
+
+# Introduction
+
+## Getting Help
+?mean  Get help in a particular function
+
+## File Navigation
+
+getwd() | Show working directory
+
+setwd('H://file/path') | Set working directory
+
+R Studio: Create a project by pointing to an existing directory of scripts
+
+## Load built-in dataset and explore
+```{r load, warning=FALSE}
+# Limit printing for sake of brevity:
+options(max.print=15)
+data(cancer) # load the dataset 'cancer' (from the 'survival' package)
+colnames(cancer) # snows names of colums
+summary(cancer$age) # shows summary of the contents of each column
+median(cancer$age,na.rm=TRUE) # Need to remove any NA values
+str(cancer) # shows the structure of the object (dataframe).
+```
+
+## Counting observations
+```{r coung, warning=FALSE, comment=NA}
+nrow(cancer) #count number of rows in dataframe
+
+length(cancer) # count number of columns in dataframe
+ncol(cancer)  # count number of columns in dataframe
+
+
+cancer$sex==1 # Generate Boolean vector showing which observations satisfy the criteria
+
+
+sum(cancer$sex==1) # Count number of observations which satisfy condition. 
+
+sum(cancer$sex==1)/length(cancer$sex) #  Calculate proportions
+```
+
+## Detecting and counting NA observations
+```{r NA, warning=FALSE, comment=NA}
+sum(is.na(cancer$wt.loss)) #count number of rows with NA for a given column
+
+length(na.omit(cancer$wt.loss)) #count number of rows not NA for a given column
+sum(!is.na(cancer$wt.loss)) 
+
+complete.cases(cancer)   # Boolean showing rows with no NA values
+sum(complete.cases(cancer))  # count how many rows have no NA values
+
+nrow(na.omit(cancer))  # Alternate method of counting complete cases (rows with no NA)
+```
+
+## Descriptive Statistics
+```{r descriptives, warning=FALSE, comment=NA}
+
+median(cancer$wt.loss) # Fails due to NA values
+
+median(na.omit(cancer$wt.loss))
+
+
+```
+
+
+## Inline chunks
+
+Total Cohort consists of `r nrow(cancer)` patients
+
+## Export to SAS
+
+Writes a .csv file with an accompanying .sas file with data specifications
+
+```{r export1}
+write.foreign(cancer,"cancer_data","cancer_data.sas",package="SAS")
+
+```
+
+## Child Chunk
+
+Chunk CS_dictionary.Rmd is included in this document
+
+```{r child='CS_dictionary.Rmd'}
+```
+
+
+## Factors, Cut, Recode
+```{r factors, echo=TRUE, comment=NA}
+#create factors
+cancer$sex_F<-factor(cancer$sex, levels = c(1,2), labels=c("Male","Female"))
+class(cancer$sex)
+class(cancer$sex_F)
+
+#Cut to transform continuous variable to categorical
+cancer$agegroup_R<-cut(cancer$age, c(0,25,50,75,110))
+
+#Recoding using ifelse
+cancer$age_over_65 <- ifelse (cancer$age %in% c(65:100), "Over65", "Under65")
+
+#Recoding using bracket notation
+cancer$age_over_75 <- 0
+cancer$age_over_75[cancer$age >75]<-1
+
+cancer$agegroup_R<-droplevels.factor(cancer$agegroup_R)
+
+ls()
+colnames(cancer)
+```
+
+## Histogram
+```{r histogram, echo=TRUE, comment=NA}
+hist(cancer$age)
+hist(cancer$age,freq=FALSE, xlab = "Age", main="Distribution of Age",sub="Cancer Dataframe", col="light blue", xlim=c(2,100), ylim=c(0,0.05))
+curve(dnorm(x, mean=mean(cancer$age), sd = sd(cancer$age)), add=TRUE, col="darkblue", lwd=2)
+```
+
+## Scatterplot
+```{r MIEdata, echo=FALSE, comment=NA}
+operation_date<-c('2010-09-10' , '2009-02-08' , '2009-03-26' , '2009-02-23' , '2009-04-05' , '2009-03-09' , '2009-02-24' , '2009-04-11' , '2009-05-06' , '2009-09-27' , '2009-08-31' , '2009-11-13' , '2009-11-16' , '2009-11-30' , '2009-12-14' , '2010-02-08' , '2010-03-25' , '2010-05-10' , '2010-05-13' , '2010-05-14' , '2010-05-17' , '2010-07-08' , '2010-07-15' , '2010-07-16' , '2010-08-26' , '2010-09-13' , '2010-09-27' , '2010-10-11' , '2010-10-15' , '2010-11-07' , '2011-01-13' , '2011-01-14' , '2011-02-20' , '2011-03-17' , '2011-03-19' , '2011-03-21' , '2011-05-17' , '2011-05-19' , '2011-06-02' , '2011-06-06' , '2011-06-13' , '2011-06-16' , '2011-06-21' , '2011-07-08' , '2011-07-14' , '2011-07-25' , '2011-08-15' , '2011-08-22' , '2011-09-15' , '2011-10-13' , '2011-10-20' , '2011-11-14' , '2011-11-21' , '2011-12-07' , '2011-12-08' , '2012-01-04' , '2012-01-12' , '2012-01-16' , '2012-01-23' , '2012-02-13' , '2012-02-20' , '2012-03-28' , '2012-04-12' , '2012-04-16' , '2012-05-30' , '2012-06-04' , '2012-07-13' , '2012-07-19' , '2012-07-27' , '2012-08-13' , '2012-08-30' , '2012-09-07' , '2012-09-10' , '2012-10-01' , '2012-10-18' , '2012-10-22' , '2012-10-29' , '2012-11-15' , '2013-01-07' , '2013-01-21' , '2013-02-04' , '2013-02-21' , '2013-03-14' , '2013-03-18' , '2013-03-21' , '2013-04-11' , '2013-04-29' , '2013-05-20' , '2013-07-11' , '2013-07-15' , '2013-07-18' , '2013-08-12' , '2013-08-19' , '2013-08-26' , '2013-08-29' , '2013-08-30' , '2013-09-12' , '2013-09-23' , '2013-09-26' , '2013-09-30'  )
+ORMinutes <- c(523 , 705 , 727 , 641 , 680 , 702 , 723 , 666 , 600 , 528 , 624 , 543 , 574 , 458 , 612 , 570 , 583 , 528 , 483 , 547 , 442 , 531 , 615 , 556 , 499 , 469 , 450 , 475 , 566 , 625 , 538 , 572 , 466 , 481 , 551 , 521 , 624 , 443 , 517 , 552 , 557 , 534 , 680 , 696 , 619 , 495 , 592 , 561 , 568 , 511 , 549 , 483 , 423 , 514 , 487 , 637 , 491 , 659 , 583 , 498 , 473 , 603 , 412 , 437 , 486 , 567 , 536 , 513 , 584 , 671 , 695 , 502 , 469 , 499 , 506 , 552 , 521 , 452 , 585 , 401 , 439 , 329 , 541 , 350 , 386 , 325 , 650 , 622 , 522 , 484 , 411 , 466 , 719 , 594 , 580 , 448 , 379 , 527 , 554,420)
+leak<-c(0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 , 1 , 1 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 , 0  )
+MIE<-data.frame(operation_date,ORMinutes,leak)
+MIE$rank_operation_date<-rank(MIE$operation_date, na.last=TRUE, ties.method="min")
+```
+
+```{r scatter1, echo=FALSE, comment=NA}
+
+plot(MIE$rank_operation_date,MIE$ORMinutes,col="black", xlab="Case Number", ylab="OR Time in Minutes", ylim=c(300,900), xlim=c(1,100))
+abline(lm(MIE$ORMinutes ~ MIE$rank_operation_date),lty=2)
+```
+
+## Scatter Plot - Data Subsets
+```{r scatter2, echo=FALSE, comment=NA}
+plot(  MIE$rank_operation_date[MIE$rank_operation_date %in% c(1:50)],MIE$ORMinutes[MIE$rank_operation_date %in% c(1:50)],col="blue", xlab="Case Number", ylab="OR Time in Minutes", ylim=c(300,900), xlim=c(1,100))
+lmfit1<-lm(MIE$ORMinutes[MIE$rank_operation_date %in% c(1:50)] ~ MIE$rank_operation_date[MIE$rank_operation_date %in% c(1:50)] )
+ablineclip(lmfit1,x1=1,x2=50,col="blue")
+
+
+par(new=TRUE)
+## Second plot rank_operation_date 101-200
+plot(  MIE$rank_operation_date[MIE$rank_operation_date %in% c(51:100)],MIE$ORMinutes[MIE$rank_operation_date %in% c(51:100)],col="red", xlab="Case Number", ylab="OR Time in Minutes", ylim=c(300,900), xlim=c(1,100))
+lmfit2<-lm(MIE$ORMinutes[MIE$rank_operation_date %in% c(51:100)] ~ MIE$rank_operation_date[MIE$rank_operation_date %in% c(51:100)])
+ablineclip(lmfit2,x1=51,x2=100,col="red")
+
+
+print("Coefficients for First 50:")
+coef(lmfit1)
+print("Coefficients for Second 50:")
+coef(lmfit2)
+
+print(str(lmfit1))
+
+slope_twostage = lmfit1$coefficients[2]
+# Slope for one-stage, derived from lmfits:
+slope_onestage = lmfit2$coefficients[[2]]
+```
+str(lmfit1) allows exploring the structure of the object. coefficients is identified as a parameter, which is an array. lmfit1$coefficients[2] is the second element of the array.
+
+Two-stage cases: 0perative time decreased by `r signif(slope_twostage,3)` minutes per case
+
+One-stage cases: 0perative time decreased by `r signif(slope_onestage,3)`  minutes per case.
+
+\clearpage
+
+## Scatter Plots - conditional Symbol/Color formatting
+
+
+```{r scatter_plot}
+plot(cancer$meal.cal ~ cancer$age, xlab="Age", ylab="Meal Calories", ylim=c(0,2600), xlim=c(20,90), main="Meal Calories ~ Age",col=ifelse(cancer$sex_F=="Male", "red", "blue"), pch=ifelse(cancer$sex_F=="Male", 1, 2)   )
+legend(40, 2150, pch=c(2,1:2), col=c("blue", "red"), c("Female", "Male"), bty="o", cex=1.0)
+abline(lm(cancer$meal.cal ~ cancer$age), lty=2)
+```
+
+## Overlay Scatter Plots
+
+```{r scatteroverlay, echo=FALSE}
+plot(cancer$meal.cal[cancer$sex==1] ~ cancer$age[cancer$sex==1], xlab="Age", ylab="Meal Calories", ylim=c(0,2600), xlim=c(30,90),col="blue", main = "Meal Calories ~ Age (by Sex)")
+abline(lm(cancer$meal.cal ~ cancer$age), lty=2)
+par(new=TRUE)
+plot(cancer$meal.cal[cancer$sex==2] ~ cancer$age[cancer$sex==2], xlab="", ylab="", ylim=c(0,2600), xlim=c(0,100),col="red",axes=FALSE)
+```
+
+
+## CUSUM Chart
+```{r CUSUMFunction, echo=TRUE, comment=NA}
+CUSUM.Exp<- function(outcomes,alpha=0.1, beta=0.1, p0,p1,CL,ylabel="CUSUM",xlabel="Case Number") {
+  a <-log((1-beta)/alpha)
+  b<- log((1-alpha)/beta)
+  p<- log(p1/p0)
+  q<- log((1-p0)/(1-p1))
+  h0<- -b/(p+q)
+  h1<- a/(p+q)
+  s<-q/(p+q)
+  npat<-length(outcomes) # Number of patients (or cases)
+  Cup<-0  # Initiaize the CUmulative SUM
+  plt <- matrix(0,nrow=npat,ncol=2)  # Matrix which will hold the plotted points
+  for (ii in 1:npat){
+    outcome<-outcomes[ii]
+    if(outcome==1){ #Adverse Outcome
+      Cup<- Cup +(1-s)
+    }else { #no Adverse outcome
+      Cup <- Cup -s
+    }
+    plt[ii,] <-c(ii,Cup)
+  }
+  minY = min(plt[,2], 0) # Minimum Y value
+  maxY = max(plt[,2],CL) # Maximum Y value
+  CUSUM.plot <-plot(plt[,1],plt[,2],ylab=ylabel,type="l",xlab=xlabel, ylim=c(minY, maxY) ,xlim=c(0,npat))  #plot the CUSUM 
+  return(list(CUSUM.Plot=CUSUM.plot,h0=h0,h1=h1))
+}
+
+```
+
+```{r CUSUMCall, echo=FALSE, comment=NA}
+MIEorder<-MIE[order(operation_date),]
+plot1<-CUSUM.Exp(outcomes=MIEorder$leak,alpha=0.1,beta=0.1,p0=0.05,p1=0.25,CL=5,ylabel="CUSUM LEAK", xlabel="Experience")
+#plot1$h0
+
+```
+
+
+
+## Tables
+```{r pressure, echo=TRUE, comment=NA}
+table(cancer$sex_F)
+addmargins(table(cancer$sex_F))
+table(cancer$sex_F,cancer$ph.ecog,dnn=c("Gender","ECOG PS"))
+#
+```
+
+## Subsets - using subset()
+(Note that because sex_F is a factor, all levels are shown in the table)
+```{r subsets, comment = NA}
+cancer.mecog1 <-subset(cancer,ph.ecog==1 & sex_F =="Male" ) 
+table(cancer.mecog1$sex_F,cancer.mecog1$ph.ecog,dnn=c("Gender","ECOG PS"))
+```
+
+
+## Subsets - alternate
+(Note that because sex_F is a factor, all levels are shown in the table)
+```{r subsetalt, comment=NA}
+table(cancer$sex_F,cancer$ph.karno,dnn=c("Gender","Physician Karnofsky Scale"))
+cancer.karno7090 <-cancer[cancer$ph.karno %in% c(70,80,90),]
+table(cancer.karno7090$sex_F,cancer.karno7090$ph.karno,dnn=c("Gender","Physician Karnofsky Scale"))
+```
+
+
+
+## Slice dataframe into vectors
+
+Bracket notation slices a dataframe [rows,colums]
+
+cancer[,2]  selects all rows and only column 2
+cancer[,"sex"]  selects all rows and only the colum labeled "sex"
+cancer[3,]  selects all columns of the third row of the dataframe
+cancer[cancer$sex==1,] selects all columns where all rows satisfy cancer$sex==1
+```{r slice, echo=TRUE, comment = NA}
+cancer.femalekarno70 <-cancer[cancer$ph.karno %in% c(70) & cancer$sex ==2,]
+print (cancer.femalekarno70[,c("sex","ph.ecog")], row.names=FALSE)
+# Supress printing of row names
+```
+
+
+
+
+## Comparision of categorical variables between groups
+### Chi Square
+```{r chisq,echo=TRUE, comment=NA}
+chisq.test(table(cancer$sex_F,cancer$ph.ecog))
+chisq.test(table(cancer$sex_F,cancer$ph.ecog))$p.value
+```
+\clearpage
+
+## Comparison of continuous variables between groups
+### Wilcox and Kruskal tests
+```{r wilcox, echo=TRUE, comment=NA}
+wilcox.test(cancer$meal.cal ~ cancer$sex_F)
+kruskal.test(cancer$meal.cal ~ cancer$sex_F)
+boxplot(cancer$meal.cal ~ cancer$sex_F, xlab="Gender", ylab="Meal Calories")
+```
+
+\clearpage
+
+### CrossTable (requires descr package)
+Parameters allow precise control of display of row vs column percentages (and totals)
+```{r, echo=TRUE, comment=NA, warning=FALSE}
+CrossTable(cancer$sex_F,cancer$ph.ecog)
+
+ct<-CrossTable(cancer$sex_F,cancer$ph.ecog, digits = list(expected=1, prop=3,percent=2,others=3),prop.r=TRUE,prop.c=FALSE,prop.t=FALSE, prop.chisq=FALSE, chisq=TRUE, missing.include=FALSE, dnn=c("Gender", "ECOG"),cell.layout=FALSE,total.r=TRUE,total.c=TRUE)
+print(ct)
+plot(ct, inv.y=TRUE)
+
+
+```
+\clearpage
+
+
+### Pander output CrossTable
+```{r , echo=FALSE,results='asis', warning=FALSE, message=FALSE}
+#panderOptions('digits',2)
+#panderOptions('round',2)
+#panderOptions('keep.trailing.zeros',TRUE)
+#pander(ct,caption=attr(ct,"CrossTable of Gender vs ECOG"),total.r=ct$total.r,total.c=ct$total.c)
+```
+
+
+
+# Pander Output
+### Pander output of Chi square
+```{r , echo=FALSE,results='asis', warning=FALSE}
+#pander(chisq.test(table(cancer$sex_F,cancer$ph.ecog)),caption="Chi Square Test Sex ~ ECOG")
+```
+
+
+### Pander output of simple tables
+```{r , echo=FALSE,results='asis'}
+panderOptions('table.alignment.default', function(df) ifelse(sapply(df, is.numeric), 'right','left'))
+panderOptions('table.split.table',Inf)
+panderOptions('big.mark',",")
+panderOptions('keep.trailing.zeros',TRUE)
+pander(addmargins(table(cancer$sex_F,cancer$ph.ecog,exclude=NULL,dnn=c("Gender","ECOG PS"))),caption="Table of Sex x ECOG", dnn=c("Sex", "ECOG"))
+```
+
+### Pander output of dataframe
+```{r, echo=FALSE, results='asis'}
+
+data(mtcars)
+mtcars1<-mtcars[1:8,1:4]
+pander(mtcars1)
+```
+
+### knitr::kable output of dataframes
+```{r, echo=FALSE, reults='asis'}
+kable(mtcars1)
+```
+
+
+```{r foreignout, echo=FALSE}
+#library(foreign)
+#write.foreign(rectum,datafile= "../derived/rectum9814RSD.txt",codefile =  "../derived/rectum9814RSD.sas", package = "SAS")
+```
+
+```{r SASexportout, echo=FALSE}
+#library(SASexport)
+#write.export(rectum, file= "../derived/rectum9814RSD.xpt")
+
+```
+
+## Report Tools
+
+```{r demo1, echo=FALSE, results='asis', warning=FALSE, comment='', error=FALSE, message=FALSE}
+options(xtable.comment = FALSE)
+## group50 allows grouping table data based upon first 50, second 50, and next 64
+group_sex <-cancer[,"sex_F"]
+demo1<-cancer[,c("status","ph.ecog","ph.karno","pat.karno")]
+tableNominal(vars=demo1, longtable=FALSE,cumsum=FALSE, cap="Cancer: Categorical Variables", group=group_sex, print.pval = c("fisher"))
+stats1<-c("min","median","mean","max")
+demo21<-cancer[,c("meal.cal","wt.loss")]
+tableContinuous(vars=demo21, longtable=FALSE, cumsum=FALSE, cap="Cancer: Continuous variables", stats=stats1,font.size="normalsize",group=group_sex)
+```
+
+```{r, include=FALSE}
+# To extract coefficients from fitted model
+
+#coxout<-coxph(Surv(t,t.censor)~x)
+
+#coxout$coef
+#coxout$p
+#summary(coxout)$logtest["test"]
+#summary(coxout)$logtest["pvalue"]
+#Can learn more:
+#str(summary(coxout))
+
+```
+
+
