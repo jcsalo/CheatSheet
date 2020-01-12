@@ -1,0 +1,412 @@
+---
+title: "CheatSheet"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) #Tools for tidy data analysis - Hadley Wickham
+library(survival)
+library(knitr) # Used to generate reproduceable rearch
+library(pander) # Generate tables for MS Word documents
+library(tableone) # Generates Table 1 for clinical research reporting
+library(descr)  # Used for CrossTable
+library(broom)  # used for tidy() - function which reformats regression coefficients 
+
+```
+
+# Introduction
+
+## Getting Help
+?mean  Get help in a particular function
+
+## File Navigation
+
+getwd() | Show working directory
+
+setwd('H://file/path') | Set working directory
+
+R Studio: Create a project by pointing to an existing directory of scripts
+
+# Core Programming
+
+## Variables
+```{r, echo=TRUE}
+x<-2L
+typeof(x)
+class(x)
+str(x)
+y<-2.5
+typeof(y)
+z<-"h"
+typeof(z)
+a<-T
+typeof(a)
+b<-FALSE
+typeof(b)
+
+```
+
+## Using Variables
+```{r, echo=TRUE}
+greeting<- "hello"
+recipient <- "World"
+message<-paste(greeting, recipient)
+message
+```
+
+## Logical Operators
+
+Pipe is OR logical operator
+
+Ampersand is AND logical operator
+
+```{r, echo=TRUE}
+result<- 4<5
+result
+
+result2 <- !(5>1)
+result2
+
+result | result2
+
+result & result2
+```
+
+# While and For Loops
+
+Note 1:5 is a vector (one-dimensional array)
+
+```{r}
+
+counter <-1 
+while (counter <12) {
+  print (counter)
+  counter<- counter +1
+}
+
+for (i in 1:5) {
+  print("Hellow World")
+}
+
+1:5
+```
+
+
+```{r}
+
+
+x<-rnorm(1)
+if (x>1) {
+  answer <- "Greater than 1"
+}else if (x>=-1){
+  answer <- "Between -1 and 1"
+} else {
+  answer <-"Less than -1"
+}
+x
+answer
+
+```
+
+## Vectors
+
+Note bracket indexing - Different lists/vectors will behave differently with these two notationss
+```{r}
+vector1<- c(3,4,56, 72,125, 2)
+vector1
+typeof(vector1)
+str(vector1)
+class(vector1)
+is.numeric(vector1)
+is.integer(vector1)
+is.character(vector1)
+
+
+vector2<- c("G",4,"Smith", 72)
+vector2
+typeof(vector2)
+str(vector2)
+class(vector2)
+is.numeric(vector2)
+is.integer(vector2)
+is.character(vector2)
+
+vector3<-seq(1,9,by=2)
+vector3
+
+vector1[2]
+vector1[[2]]
+
+vector1[-3]
+
+vector1[2:4]
+
+vector1[c(1,3,4)]
+```
+## Functions
+
+```{r}
+
+A<- c(1,3,5,7,9,11)
+B<-sqrt(A)
+B
+```
+
+## Packages
+```{r}
+
+try(?ggplot2())
+library(ggplot2)
+?ggplot2()
+qplot(data=diamonds, carat, price, colour=clarity, facets=.~clarity)
+
+```
+
+## Load built-in dataset and explore
+```{r load, warning=FALSE}
+data(cancer) # load the dataset 'cancer' (from the 'survival' package)
+colnames(cancer) # snows names of colums
+summary(cancer$age) # shows summary of the contents of each column
+median(cancer$age,na.rm=TRUE) # Need to remove any NA values
+str(cancer) # shows the structure of the object (dataframe).
+
+
+```
+
+```{r save}
+#library(openxlsx)
+#library(xlsx)
+#library(xlsxjars)
+#library(WriteXLS)
+#WriteXLS(cancer, ExcelFileName="cheat.xls", perl="perl", verbose=TRUE )
+#write.xlsx(cancer,file="cheat.xlsx", col.names=TRUE, row.names=TRUE, append=FALSE, showNA=FALSE)
+
+```
+
+
+## Factors, Cut, Recode
+```{r factors, echo=TRUE, comment=NA}
+#create factors
+cancer$sex_F<-factor(cancer$sex, levels = c(1,2), labels=c("Male","Female"))
+class(cancer$sex)
+class(cancer$sex_F)
+
+#Cut to transform continuous variable to categorical
+cancer$agegroup_R<-cut(cancer$age, c(0,25,50,75,110))
+
+#Recoding using ifelse
+cancer$age_over_65 <- ifelse (cancer$age %in% c(65:100), "Over65", "Under65")
+
+#Recoding using bracket notation
+cancer$age_over_75 <- 0
+cancer$age_over_75[cancer$age >75]<-1
+```
+
+## Histogram
+```{r histogram, echo=TRUE, comment=NA}
+hist(cancer$age)
+hist(cancer$age,freq=FALSE, xlab = "Age", main="Distribution of Age",sub="Cancer Dataframe", col="light blue", xlim=c(2,100), ylim=c(0,0.05))
+curve(dnorm(x, mean=mean(cancer$age), sd = sd(cancer$age)), add=TRUE, col="darkblue", lwd=2)
+```
+
+## Scatterplot
+
+```
+
+## Scatter Plot - Data Subsets
+
+```
+
+## Scatter Plots
+
+
+```{r cars}
+#data(cancer)
+colnames(cancer)
+table(cancer$meal.cal)
+plot(cancer$meal.cal ~ cancer$age, xlab="Age", ylab="Meal Calories", ylim=c(0,2600), xlim=c(0,100), main="Meal Calories ~ Age")
+abline(lm(cancer$meal.cal ~ cancer$age), lty=2)
+```
+
+## Overlay Scatter Plots
+
+```{r scatteroverlay, echo=FALSE}
+plot(cancer$meal.cal[cancer$sex==1] ~ cancer$age[cancer$sex==1], xlab="Age", ylab="Meal Calories", ylim=c(0,2600), xlim=c(0,100),col="blue")
+abline(lm(cancer$meal.cal ~ cancer$age), lty=2)
+par(new=TRUE)
+plot(cancer$meal.cal[cancer$sex==2] ~ cancer$age[cancer$sex==2], xlab="", ylab="", ylim=c(0,2600), xlim=c(0,100),col="red",axes=FALSE)
+
+
+
+```
+
+
+
+
+
+## Tables
+```{r pressure, echo=TRUE, comment=NA}
+table(cancer$sex_F)
+addmargins(table(cancer$sex_F))
+table(cancer$sex_F,cancer$ph.ecog,dnn=c("Gender","ECOG PS"))
+#
+```
+
+## Subsets - using subset()
+(Note that because sex_F is a factor, all levels are shown in the table)
+```{r subsets, comment = NA}
+cancer.mecog1 <-subset(cancer,ph.ecog==1 & sex_F =="Male" ) 
+table(cancer.mecog1$sex_F,cancer.mecog1$ph.ecog,dnn=c("Gender","ECOG PS"))
+```
+
+
+## Subsets - alternate
+(Note that because sex_F is a factor, all levels are shown in the table)
+```{r subsetalt, comment=NA}
+table(cancer$sex_F,cancer$ph.karno,dnn=c("Gender","Physician Karnofsky Scale"))
+cancer.karno7090 <-cancer[cancer$ph.karno %in% c(70,80,90),]
+table(cancer.karno7090$sex_F,cancer.karno7090$ph.karno,dnn=c("Gender","Physician Karnofsky Scale"))
+```
+
+
+
+## Slice dataframe into vectors
+
+Bracket notation slices a dataframe [rows,colums]
+
+cancer[,2]  selects all rows and only column 2
+cancer[,"sex"]  selects all rows and only the colum labeled "sex"
+cancer[3,]  selects all columns of the third row of the dataframe
+cancer[cancer$sex==1,] selects all columns where all rows satisfy cancer$sex==1
+```{r slice, echo=TRUE, comment = NA}
+cancer.femalekarno70 <-cancer[cancer$ph.karno %in% c(70) & cancer$sex ==2,]
+print (cancer.femalekarno70[,c("sex","ph.ecog")], row.names=FALSE)
+# Supress printing of row names
+```
+
+
+## Comparision of categorical variables between groups
+### Chi Square and Fisher
+```{r chisq,echo=TRUE, comment=NA}
+chisq.test(table(cancer$sex_F,cancer$ph.ecog))
+chisq.test(table(cancer$sex_F,cancer$ph.ecog))$p.value
+fisher.test(table(cancer$sex_F,cancer$ph.ecog))
+fisher.test(table(cancer$sex_F,cancer$ph.ecog))$p.value
+```
+
+## Comparison of continuous variables between groups
+### Wilcox and Kruskal tests
+```{r wilcox, echo=TRUE, comment=NA}
+wilcox.test(cancer$meal.cal ~ cancer$sex_F)
+kruskal.test(cancer$meal.cal ~ cancer$sex_F)
+boxplot(cancer$meal.cal ~ cancer$sex_F, xlab="Gender", ylab="Meal Calories")
+```
+
+
+### CrossTable (requires descr package)
+Parameters allow precise control of display of row vs column percentages (and totals)
+```{r, echo=TRUE, comment=NA}
+CrossTable(cancer$sex_F,cancer$ph.ecog)
+
+ct<-CrossTable(cancer$sex_F,cancer$ph.ecog, digits = list(expected=1, prop=3,percent=2,others=3),prop.r=TRUE,prop.c=FALSE,prop.t=FALSE, prop.chisq=FALSE, chisq=TRUE, missing.include=FALSE, dnn=c("Gender", "ECOG"),cell.layout=FALSE,total.r=TRUE,total.c=TRUE)
+plot(ct, inv.y=TRUE)
+print(ct)
+
+```
+
+```{r, include=FALSE}
+# To extract coefficients from fitted model
+
+#coxout<-coxph(Surv(t,t.censor)~x)
+
+#coxout$coef
+#coxout$p
+#summary(coxout)$logtest["test"]
+#summary(coxout)$logtest["pvalue"]
+#Can learn more:
+#str(summary(coxout))
+
+```
+
+
+### Pander output CrossTable
+```{r , echo=FALSE,results='asis', warning=FALSE, message=FALSE}
+#panderOptions('digits',2)
+#panderOptions('round',2)
+#panderOptions('keep.trailing.zeros',TRUE)
+#pander(ct,caption=attr(ct,"CrossTable of Gender vs ECOG"),total.r=ct$total.r,total.c=ct$total.c)
+```
+
+
+
+# Pander Output
+### Pander output of Chi square
+```{r , echo=FALSE,results='asis', warning=FALSE}
+#pander(chisq.test(table(cancer$sex_F,cancer$ph.ecog)),caption="Chi Square Test Sex ~ ECOG")
+```
+
+
+### Pander output of simple tables
+```{r , echo=FALSE,results='asis'}
+#pander(table(cancer$sex_F,cancer$ph.ecog,dnn=c("Gender","ECOG PS")),caption="Table of Sex x ECOG", dnn=c("Sex", "ECOG"))
+```
+
+
+```{r foreignout, echo=FALSE}
+#library(foreign)
+#write.foreign(rectum,datafile= "../derived/rectum9814RSD.txt",codefile =  "../derived/rectum9814RSD.sas", package = "SAS")
+```
+
+
+## Tableone - Stratified
+```{r tableone, echo=FALSE, comment=NA, warning=FALSE, results='asis'}
+myVars <- c("time", "status", "trt", "age", "sex", "ascites", "hepato",
+          "spiders", "edema", "bili", "chol", "albumin", "copper", "alk.phos",
+          "ast", "trig", "platelet", "protime", "stage")
+catVars <- c("status", "trt", "ascites", "hepato",
+             "spiders", "edema", "stage")
+biomarkers <- c("bili","chol","copper","alk.phos","ast","trig","protime")
+tab3 <- CreateTableOne(vars = myVars, strata = "trt" , data = pbc, factorVars = catVars)
+printtab3 <- print(tab3,printToggle=FALSE,exact="stage")
+pander(printtab3)
+```
+
+
+## Tableone - Include non-normal continuous varaibles
+```{r tableone4, echo=FALSE, comment=NA, warning=FALSE, results='asis'}
+myVars <- c("time", "status", "trt", "age", "sex", "ascites", "hepato",
+          "spiders", "edema", "bili", "chol", "albumin", "copper", "alk.phos",
+          "ast", "trig", "platelet", "protime", "stage")
+catVars <- c("status", "trt", "ascites", "hepato",
+             "spiders", "edema", "stage")
+biomarkers <- c("bili","chol","copper","alk.phos","ast","trig","protime")
+tab3 <- CreateTableOne(vars = myVars , data = pbc, factorVars = catVars)
+printtab3 <- print(tab3,printToggle=FALSE,nonnormal=biomarkers,exact="stage")
+pander(printtab3)
+```
+
+
+
+##Tableone - Categorical Variables Only
+
+```{r tableone3,echo=FALSE}
+printtab3cat <- print(tab3$CatTable,printToggle=FALSE)
+pander(printtab3cat)
+
+```
+
+## Tableone - Continuous variables only
+```{r tableone5,echo=FALSE}
+printtab4cont <- print(tab3$ContTable,printToggle=FALSE)
+pander(printtab4cont)
+
+```
+
+
+
+```{r SASexportout, echo=FALSE}
+#library(SASexport)
+#write.export(rectum, file= "../derived/rectum9814RSD.xpt")
+
+```
